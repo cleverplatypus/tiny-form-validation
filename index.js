@@ -18,7 +18,7 @@ const EMPTY_VALUE = [null, undefined, ''];
 //---------------------------------------------------------------------
 
 const fieldIsEmpty = data => 
-     data === false || !data?.length; //this covers required true, null, undefined, '' and empty array
+    typeof data !== 'number' && (data === false || !data?.length); //this covers required true, null, undefined, '' and empty array
 
 
 export default class Validation {

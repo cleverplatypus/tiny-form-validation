@@ -1,8 +1,11 @@
 {
   "name": "tiny-form-validation",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Small utility to help form validation",
   "main": "index.js",
   "author": "Nicola Dal Pont",
-  "license": "MIT"
+  "license": "MIT",
+  "dependencies": {
+    "lodash.get": "^4.4.2"
+  }
 }
