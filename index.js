@@ -6,6 +6,7 @@ const EMPTY_VALUE = [null, undefined, ''];
 // {
 //     isOptional : Boolean, //not required in rule config
 //     field : String, //the field name,
+//     emptyFieldMessage : String, //what message to show if the field is empty. The default one is used if not specified
 //     tests : [ //not required in rule config
 //         { 
 //             fn : Function '', //async returning Promise<Boolean>, true for test passed
