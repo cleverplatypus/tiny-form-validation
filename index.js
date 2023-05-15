@@ -54,6 +54,9 @@ export default class Validation {
         for(let rule of this.#rules) {
             const fieldData = get(data,rule.field);
             const isEmpty = await (rule.emptyTest || fieldIsEmpty)(fieldData)
+            if(rule.skipIf && rule.skipIf(data, rule.field)) {
+                continue;
+            }
             if(rule.isOptional && isEmpty) {
                 continue; //empty/false but not mandatory. no issue
             }
