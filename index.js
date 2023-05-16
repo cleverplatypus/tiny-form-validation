@@ -52,11 +52,12 @@ export default class Validation {
                 mandatoryFieldFault(rule.field, rule.emptyFieldMessage); //a non empty value or a true is required
                 continue;
             }
+            //first set the field valid. This will be overridden on test failure
+            setValid(rule.field);
+
             if(!rule.tests) {
                 continue;
             }
-            //first set the field valid. This will be overridden on test failure
-            setValid(rule.field);
 
             for(let test of rule.tests) {
                 if(!(await test.fn(get(data,rule.field), rule.field, data))) {
