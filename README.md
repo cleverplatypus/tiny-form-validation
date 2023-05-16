@@ -24,6 +24,7 @@ const model = {
         favourite_colour : false,
         email : false
         'address.postal_code' : false,
+        uses_internet : false,
         ip_address : false
     },
     isValid : false
@@ -56,6 +57,7 @@ const rules = [
         ]
     }, {
         field : 'ip_address',
+        skipIf : (data, field) => !data.uses_internet,
         tests : [
             {
                 fn : isIP4,
@@ -76,6 +78,7 @@ const formData = {
     address : {
         postal_code : '234324'
     },
+    uses_internet : true,
     ip_address : '102.168.1.1'
 }
 validation.validate(formData);
