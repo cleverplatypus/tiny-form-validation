@@ -55,6 +55,9 @@ export default class Validation {
             if(!rule.tests) {
                 continue;
             }
+            //first set the field valid. This will be overridden on test failure
+            setValid(rule.field);
+
             for(let test of rule.tests) {
                 if(!(await test.fn(get(data,rule.field), rule.field, data))) {
                     invalidate(rule.field, test.message);
@@ -63,7 +66,6 @@ export default class Validation {
                     }
                     continue;
                 } 
-                setValid(rule.field);
                 if(rule.stopOnSuccess) {
                     break;
                 }
