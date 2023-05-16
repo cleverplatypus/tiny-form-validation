@@ -3,9 +3,14 @@
   "version": "1.0.2",
   "description": "Small utility to help form validation",
   "main": "index.js",
+  "type": "module",
+  "scripts": {
+    "test": "yarn node --experimental-vm-modules $(yarn bin jest)"
+  },
   "author": "Nicola Dal Pont",
   "license": "MIT",
-  "dependencies": {
-    "lodash.get": "^4.4.2"
+  "dependencies": {},
+  "devDependencies": {
+    "jest": "^29.5.0"
   }
 }

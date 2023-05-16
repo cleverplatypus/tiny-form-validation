@@ -1,7 +1,5 @@
-import get from 'lodash.get';
-
 const EMPTY_VALUE = [null, undefined, ''];
-
+export const EMPTY_MANDATORY_FIELD_ERROR = 'empty_mandatory_field';
 // RULE SCHEMA ------------------------------------------------------
 // {
 //     isOptional : Boolean, //not required in rule config
@@ -26,7 +24,7 @@ const fieldIsEmpty = data =>
 export default class Validation {
     #model = null
     #rules = null
-    #mandatoryFieldError = 'This information is required';
+    #mandatoryFieldError = EMPTY_MANDATORY_FIELD_ERROR;
 
     constructor(model, rules) {
         this.#model = model;
@@ -47,13 +45,13 @@ export default class Validation {
         }
 
         const mandatoryFieldFault = (name, message) => {
-            if (get(data,name) !== true && !get(data,name)?.length) {
+            if (data[name] !== true && !data[name]?.length) {
                 invalidate(name, message || this.#mandatoryFieldError);
             }
         }
 
         for(let rule of this.#rules) {
-            const fieldData = get(data,rule.field);
+            const fieldData = data[rule.field];
             const isEmpty = await (rule.emptyTest || fieldIsEmpty)(fieldData)
             if(rule.skipIf && rule.skipIf(data, rule.field)) {
                 continue;
@@ -69,7 +67,7 @@ export default class Validation {
                 continue;
             }
             for(let test of rule.tests) {
-                if(!(await test.fn(get(data,rule.field)))) {
+                if(!(await test.fn(data[rule.field]))) {
                     invalidate(rule.field, test.message);
                     if(rule.stopOnFailure) {
                         break;
