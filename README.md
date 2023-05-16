@@ -43,7 +43,7 @@ const rules = [
         emptyFieldMessage : 'You need to enter your email address',
         tests : [
             {
-                fn: (value) => isValidEmail(value), // isValidEmail is some fancy third party function
+                fn: (value, fieldName, data) => isValidEmail(value), // isValidEmail is some fancy third party function
                 message : `This doesn't look like an email address`
             }
         ]
@@ -51,7 +51,7 @@ const rules = [
         field : 'address.postal_code',
         tests : [
             {
-                fn : (value) => isValidPostalCode(value, 'AU'), //other fancy external validation function
+                fn : (value, fieldName, data) => isValidPostalCode(value, 'AU'), //other fancy external validation function
                 message : `Please enter a valid postal code`
             }
         ]

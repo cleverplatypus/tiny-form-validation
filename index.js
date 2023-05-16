@@ -1,21 +1,6 @@
 const EMPTY_VALUE = [null, undefined, ''];
 export const EMPTY_MANDATORY_FIELD_ERROR = 'empty_mandatory_field';
-// RULE SCHEMA ------------------------------------------------------
-// {
-//     isOptional : Boolean, //not required in rule config
-//     field : String, //the field name,
-//     emptyFieldMessage : String, //what message to show if the field is empty. The default one is used if not specified
-//     skipIf : function that returns whether this tests should be skipped for this field
-//     tests : [ //not required in rule config
-//         { 
-//             fn : Function '', //async returning Promise<Boolean>, true for test passed
-//             message : String, //failure message template,
-//             stopOnFailure : Boolean, // default true, not required in rule config,
-//             stopOnSuccess : Boolean, // default false, not required in rule config,
-//      }
-//     ]
-// }
-//---------------------------------------------------------------------
+import get from 'lodash.get';
 
 const fieldIsEmpty = data => 
     typeof data !== 'number' && (data === false || !data?.length); //this covers required true, null, undefined, '' and empty array
@@ -44,14 +29,18 @@ export default class Validation {
             this.#model.fields[field] = message;
         }
 
+        const setValid = (field) => {
+            this.#model.fields[field] = true;
+        }
+
         const mandatoryFieldFault = (name, message) => {
-            if (data[name] !== true && !data[name]?.length) {
+            if (get(data, name) !== true && !get(data,name)?.length) {
                 invalidate(name, message || this.#mandatoryFieldError);
             }
         }
 
         for(let rule of this.#rules) {
-            const fieldData = data[rule.field];
+            const fieldData = get(data, rule.field);
             const isEmpty = await (rule.emptyTest || fieldIsEmpty)(fieldData)
             if(rule.skipIf && rule.skipIf(data, rule.field)) {
                 continue;
@@ -67,12 +56,15 @@ export default class Validation {
                 continue;
             }
             for(let test of rule.tests) {
-                if(!(await test.fn(data[rule.field]))) {
+                if(!(await test.fn(get(data,rule.field), rule.field, data))) {
                     invalidate(rule.field, test.message);
                     if(rule.stopOnFailure) {
                         break;
                     }
-                } else if(rule.stopOnSuccess) {
+                    continue;
+                } 
+                setValid(rule.field);
+                if(rule.stopOnSuccess) {
                     break;
                 }
             }

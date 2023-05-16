@@ -80,7 +80,7 @@ describe('Validation_class', () => {
 
         // Then
         expect(model.isValid).toBe(true);
-        expect(model.fields.age).toBeUndefined();
+        expect(model.fields.age).toBe(true);
         expect(model.fields.name).toBeUndefined();
     });
 
@@ -137,6 +137,30 @@ describe('Validation_class', () => {
         const model = { fields: {}, isValid: false };
         const rules = [{ field: "age", tests: [{ fn: (data) => typeof data === "number", message: "Age must be a number" }] }];
         const data = { age: 25 };
+        const validation = new Validation(model, rules);
+
+        // When
+        const result = await validation.validate(data);
+
+        // Then
+        expect(result).toBe(true);
+        expect(model.isValid).toBe(true);
+    });
+
+
+    // Tests that validate handles deep properties correctly.  
+    it("test_validate_deep_properties", async () => {
+        // Given
+        const model = { fields: {}, isValid: false };
+        const rules = [{
+            field: "address.post_code",
+            tests: [
+                {
+                    fn: (data) => typeof data === "number",
+                    message: "Post Code must be a number"
+                }]
+        }];
+        const data = { address: { post_code: 4890 } };
         const validation = new Validation(model, rules);
 
         // When
