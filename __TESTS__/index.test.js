@@ -1,4 +1,4 @@
-import Validation, { EMPTY_MANDATORY_FIELD_ERROR } from '../index.js';
+import Validation, { EMPTY_MANDATORY_FIELD_ERROR, STOP_OPTION } from '../index.js';
 
 describe('Validation_class', () => {
 
@@ -50,11 +50,14 @@ describe('Validation_class', () => {
         expect(model.fields.email).toEqual('Invalid email');
     });
 
-    // Tests that validate stops on first failure if rule.stopOnFailure is true. 
+    // Tests that validation rules evaluation stops on first failure if rule.stopOnFailure === 'rules'. 
     it("test_validate_stop_on_failure", async () => {
         // Given
-        const model = { fields: {} };
-        const rules = [{ field: 'age', tests: [{ fn: () => false, message: 'Invalid age' }], stopOnFailure: true }, { field: 'name' }];
+        const model = { fields: {
+            age : false,
+            name : false
+        } };
+        const rules = [{ field: 'age', tests: [{ fn: () => false, message: 'Invalid age' }], stopOnFailure: STOP_OPTION.RULES }, { field: 'name' }];
         const data = { age: 17, name: 'John' };
         const validation = new Validation(model, rules);
 
@@ -64,14 +67,34 @@ describe('Validation_class', () => {
         // Then
         expect(model.isValid).toBe(false);
         expect(model.fields.age).toEqual('Invalid age');
-        expect(model.fields.name).toBeUndefined();
+        expect(model.fields.name).toBe(false);
     });
 
-    // Tests that validate stops on first success if rule.stopOnSuccess is true. 
+    // Tests that a rules rule tests evaluation stops 
+    // on first success if rule.stopOnSuccess === 'tests'. 
     it("test_validate_stop_on_success", async () => {
         // Given
-        const model = { fields: {} };
-        const rules = [{ field: 'age', tests: [{ fn: () => true, message: 'Invalid age' }], stopOnSuccess: true }, { field: 'name' }];
+        const model = {
+            fields: {
+                age: false,
+                name: false
+            }
+        };
+        const rules = [
+            {
+                field: 'age',
+                tests: [{
+                    fn: () => true, message: 'Invalid age'
+                }, {
+                    fn: () => false //this should be always skipped a s the previous test always succeedes
+                }],
+                stopOnSuccess: STOP_OPTION.TESTS
+            },
+
+            {
+                field: 'name'
+            }
+        ];
         const data = { age: 17, name: 'John' };
         const validation = new Validation(model, rules);
 
@@ -81,11 +104,13 @@ describe('Validation_class', () => {
         // Then
         expect(model.isValid).toBe(true);
         expect(model.fields.age).toBe(true);
-        expect(model.fields.name).toBeUndefined();
+        expect(model.fields.name).toBe(true);
     });
 
     // Tests that validate returns true for valid data. 
     it("test_validate_valid_data", async () => {
+        console.info(`Test: test_validate_valid_data}`)
+
         // Given
         const model = { fields: {} };
         const rules = [{ field: 'name', tests: [{ fn: () => true }] }];

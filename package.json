@@ -1,6 +1,6 @@
 {
   "name": "tiny-form-validation",
-  "version": "1.0.4",
+  "version": "1.0.6",
   "description": "Small utility to help form validation",
   "main": "index.js",
   "type": "module",
