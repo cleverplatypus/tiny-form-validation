@@ -39,7 +39,7 @@ export default class Validation {
         return this;
     }
 
-    async validate(data) {
+    async validate(data, context = null) {
         let valid = true;
 
         const invalidate = (field, message) => {
@@ -60,7 +60,12 @@ export default class Validation {
         for(let rule of this.#rules) {
             const fieldData = get(data, rule.field);
             const isEmpty = await (rule.emptyTest || fieldIsEmpty)(fieldData)
-            if(rule.skipIf && rule.skipIf(data, rule.field)) {
+            const aContext = Object.freeze(Object.assign({
+                field : rule.field, 
+                data
+            }, context));
+
+            if(rule.skipIf && rule.skipIf(aContext)) {
                 continue;
             }
             if(rule.isOptional && isEmpty) {
@@ -79,7 +84,8 @@ export default class Validation {
             let stopRules = false;
 
             for(let test of rule.tests) {
-                if(!(await test.fn(get(data,rule.field), rule.field, data))) {
+                
+                if(!(await test.fn(get(data,rule.field), aContext))) {
                     invalidate(rule.field, test.message);
                     if(rule.stopOnFailure) {
                         if(rule.stopOnFailure === 'rules') {
