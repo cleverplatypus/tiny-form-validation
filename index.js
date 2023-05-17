@@ -41,14 +41,15 @@ export default class Validation {
 
     async validate(data, context = null) {
         let valid = true;
+        const out = Object.assign({}, this.#model);
 
         const invalidate = (field, message) => {
             valid = false;
-            this.#model.fields[field] = message;
+            out[field] = message;
         }
 
         const setValid = (field) => {
-            this.#model.fields[field] = true;
+            out[field] = true;
         }
 
         const mandatoryFieldFault = (name, message) => {
@@ -106,6 +107,7 @@ export default class Validation {
                 break;
             }
         }
+        Object.assign(this.#model.fields, out);
         return (this.#model.isValid = valid);
     }
 }
