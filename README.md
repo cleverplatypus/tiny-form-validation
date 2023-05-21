@@ -43,7 +43,7 @@ const rules = [
         emptyFieldMessage : 'You need to enter your email address',
         tests : [
             {
-                fn: (value, fieldName, data) => isValidEmail(value), // isValidEmail is some fancy third party function
+                fn: (value, {field, data}) => isValidEmail(value), // isValidEmail is some fancy third party function
                 message : `This doesn't look like an email address`
             }
         ]
@@ -51,13 +51,13 @@ const rules = [
         field : 'address.postal_code',
         tests : [
             {
-                fn : (value, fieldName, data) => isValidPostalCode(value, 'AU'), //other fancy external validation function
+                fn : (value, {field, data, getCurrentCountryCode}) => isValidPostalCode(value, getCurrentCountryCode()), //other fancy external validation function
                 message : `Please enter a valid postal code`
             }
         ]
     }, {
         field : 'ip_address',
-        skipIf : (data, field) => !data.uses_internet,
+        skipIf : ({data, field}) => !data.uses_internet,
         tests : [
             {
                 fn : isIP4,
@@ -67,9 +67,15 @@ const rules = [
                 message : 'Please enter either an IP4 or IP6 address'
             }
         ]
+    }, {
+        fields : ''
     }
 ]
-
+const context = {
+    async getCurrentCountryCode() {
+        return 'FR';
+    }
+}
 const validation = new Validation(model, rules);
 
 const formData = {
@@ -81,7 +87,7 @@ const formData = {
     uses_internet : true,
     ip_address : '102.168.1.1'
 }
-validation.validate(formData);
+validation.validate(formData, context);
 ```
 
 ### `model`
@@ -96,8 +102,35 @@ The value for each `fields` entry will be:
 - `true` if the field passed validation
 - a string with the validation failure description
 
-
 NOTE: deep fields can be declared using dot notation.
+
+## The context object
+An optional `Object` can be passed to the `validate` method to allow passing of additional data and/or functions to be used by the `rule.tests.fn` and `rule.skipIf` functions.
+The context object will be merged with `{field : String, data : Object}` before being passed to these functions.
+
+## API
+
+
+### Constructor
+```js
+const validator = new Validation(model, rules);
+```
+
+### `validate(data, context)`
+The validate method accepts two parameters
+- **data:** an `Object` with the data to validate
+- **context:** an optional context `Object` 
+
+### `rule.tests[].fn(value, context)`
+Each test object must provide an `async fn` function that receives the current field's value to test plus the context object and returns a `Boolean` or a `Promise<Boolean>`. A `true` value signifies a passed test.
+
+### `rule.tests[].stopOnSuccess, rule.tests[].stopOnFailure`
+Determines whether the workflow should stop after a test failure/success. The value, if specified, must be either:
+- `'tests'`: will skip the following tests, if any
+- `'rules'`: will stop evaluating the current rule
+
+The library exports a `STOP_OPTION` object enumerating `TESTS` and `RULES` constants for this purpose.
+
 
 
 
