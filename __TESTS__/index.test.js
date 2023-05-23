@@ -7,9 +7,14 @@ describe('Validation_class', () => {
     it("test_validate_empty_mandatory_field", async () => {
         // Given
         const model = { fields: {} };
-        const rules = [{ field: 'name', isOptional: false }];
+        const fields = [
+            {
+                name: 'name',
+                isOptional: false
+            }
+        ];
         const data = { name: '' };
-        const validation = new Validation(model, rules);
+        const validation = new Validation(model, fields);
 
         // When
         await validation.validate(data);
@@ -19,13 +24,21 @@ describe('Validation_class', () => {
         expect(model.fields.name).toEqual(EMPTY_MANDATORY_FIELD_ERROR);
     });
 
-    // Tests that validate skips rules with no tests and rules with skipIf condition true. 
-    it("test_validate_skipped_rules", async () => {
+    // Tests that validate skips fields with no tests and fields with skipIf condition true. 
+    it("test_validate_skipped_fields", async () => {
         // Given
         const model = { fields: {} };
-        const rules = [{ field: 'name', tests: null }, { field: 'age', skipIf: () => true }];
+        const fields = [
+            {
+                name: 'name',
+                tests: null
+            }, {
+                name: 'age',
+                skipIf: () => true
+            }
+        ];
         const data = { name: 'John', age: 25 };
-        const validation = new Validation(model, rules);
+        const validation = new Validation(model, fields);
 
         // When
         await validation.validate(data);
@@ -38,9 +51,18 @@ describe('Validation_class', () => {
     it("test_validate_invalid_fields", async () => {
         // Given
         const model = { fields: {} };
-        const rules = [{ field: 'email', tests: [{ fn: () => false, message: 'Invalid email' }] }];
+        const fields = [
+            {
+                name: 'email',
+                tests: [
+                    {
+                        fn: () => false,
+                        message: 'Invalid email'
+                    }
+                ]
+            }];
         const data = { email: 'invalid' };
-        const validation = new Validation(model, rules);
+        const validation = new Validation(model, fields);
 
         // When
         await validation.validate(data);
@@ -50,16 +72,34 @@ describe('Validation_class', () => {
         expect(model.fields.email).toEqual('Invalid email');
     });
 
-    // Tests that validation rules evaluation stops on first failure if rule.stopOnFailure === 'rules'. 
+    // Tests that validation fields evaluation stops on first failure if rule.stopOnFailure === 'fields'. 
     it("test_validate_stop_on_failure", async () => {
         // Given
-        const model = { fields: {
-            age : false,
-            name : false
-        } };
-        const rules = [{ field: 'age', tests: [{ fn: () => false, message: 'Invalid age' }], stopOnFailure: STOP_OPTION.RULES }, { field: 'name' }];
-        const data = { age: 17, name: 'John' };
-        const validation = new Validation(model, rules);
+        const model = {
+            fields: {
+                age: false,
+                name: false
+            }
+        };
+        const fields = [
+            {
+                name: 'age',
+                tests: [
+                    {
+                        fn: () => false,
+                        message: 'Invalid age'
+                    }
+                ],
+                stopOnFailure: STOP_OPTION.FIELDS
+            }, {
+                name: 'name'
+            }
+        ];
+        const data = {
+            age: 17,
+            name: 'John'
+        };
+        const validation = new Validation(model, fields);
 
         // When
         await validation.validate(data);
@@ -70,7 +110,7 @@ describe('Validation_class', () => {
         expect(model.fields.name).toBe(false);
     });
 
-    // Tests that a rules rule tests evaluation stops 
+    // Tests that a fields rule tests evaluation stops 
     // on first success if rule.stopOnSuccess === 'tests'. 
     it("test_validate_stop_on_success", async () => {
         // Given
@@ -80,9 +120,9 @@ describe('Validation_class', () => {
                 name: false
             }
         };
-        const rules = [
+        const fields = [
             {
-                field: 'age',
+                name: 'age',
                 tests: [{
                     fn: () => true, message: 'Invalid age'
                 }, {
@@ -92,11 +132,11 @@ describe('Validation_class', () => {
             },
 
             {
-                field: 'name'
+                name: 'name'
             }
         ];
         const data = { age: 17, name: 'John' };
-        const validation = new Validation(model, rules);
+        const validation = new Validation(model, fields);
 
         // When
         await validation.validate(data);
@@ -113,9 +153,18 @@ describe('Validation_class', () => {
 
         // Given
         const model = { fields: {} };
-        const rules = [{ field: 'name', tests: [{ fn: () => true }] }];
+        const fields = [
+            {
+                name: 'name',
+                tests: [
+                    {
+                        fn: () => true
+                    }
+                ]
+            }
+        ];
         const data = { name: 'John' };
-        const validation = new Validation(model, rules);
+        const validation = new Validation(model, fields);
 
         // When
         await validation.validate(data);
@@ -128,9 +177,14 @@ describe('Validation_class', () => {
     it("test_validate_optional_fields", async () => {
         // Given
         const model = { fields: {} };
-        const rules = [{ field: 'email', isOptional: true }];
+        const fields = [
+            {
+                name: 'email',
+                isOptional: true
+            }
+        ];
         const data = {};
-        const validation = new Validation(model, rules);
+        const validation = new Validation(model, fields);
 
         // When
         await validation.validate(data);
@@ -139,14 +193,19 @@ describe('Validation_class', () => {
         expect(model.isValid).toBe(true);
     });
 
-    // Tests that validate uses the custom mandatory field error message when set. 
+    // Tests that validate uses the custom mandatory name error message when set. 
     it("test_validate_custom_mandatory_error", async () => {
         // Given
         const model = { fields: {} };
-        const rules = [{ field: 'name', isOptional: false }];
+        const fields = [
+            {
+                name: 'name',
+                isOptional: false
+            }
+        ];
         const data = { name: '' };
-        const errorMessage = 'This field is required';
-        const validation = new Validation(model, rules).withMandatoryFieldError(errorMessage);
+        const errorMessage = 'This name is required';
+        const validation = new Validation(model, fields).withMandatoryFieldError(errorMessage);
 
         // When
         await validation.validate(data);
@@ -160,9 +219,19 @@ describe('Validation_class', () => {
     it("test_validate_numeric_fields", async () => {
         // Given
         const model = { fields: {}, isValid: false };
-        const rules = [{ field: "age", tests: [{ fn: (data) => typeof data === "number", message: "Age must be a number" }] }];
+        const fields = [
+            {
+                name: "age",
+                tests: [
+                    {
+                        fn: (data) => typeof data === "number",
+                        message: "Age must be a number"
+                    }
+                ]
+            }
+        ];
         const data = { age: 25 };
-        const validation = new Validation(model, rules);
+        const validation = new Validation(model, fields);
 
         // When
         const result = await validation.validate(data);
@@ -177,16 +246,17 @@ describe('Validation_class', () => {
     it("test_validate_deep_properties", async () => {
         // Given
         const model = { fields: {}, isValid: false };
-        const rules = [{
-            field: "address.post_code",
+        const fields = [{
+            name: "address.post_code",
             tests: [
                 {
                     fn: (data) => typeof data === "number",
                     message: "Post Code must be a number"
-                }]
+                }
+            ]
         }];
         const data = { address: { post_code: 4890 } };
-        const validation = new Validation(model, rules);
+        const validation = new Validation(model, fields);
 
         // When
         const result = await validation.validate(data);
@@ -194,5 +264,43 @@ describe('Validation_class', () => {
         // Then
         expect(result).toBe(true);
         expect(model.isValid).toBe(true);
+    });
+
+    it("test_validate_deep_fields", async () => {
+        const model = { fields: {}, isValid: false };
+        const fields = [
+            {
+                name: "subs",
+                fields: [
+                    {
+                        name: 'bread',
+                        tests: [
+                            {
+                                fn: val => ['herbs', 'wholemeal'].includes(val),
+                                message: 'Bread not available'
+                            }
+                        ]
+                    }
+                ]
+            }
+        ];
+        const data = {
+            subs: [
+                {
+                    bread: 'grains'
+                },
+                {
+                    bread: 'grains'
+                },
+            ]
+        }
+
+        const validation = new Validation(model, fields);
+        // When
+        const result = await validation.validate(data);
+
+        // Then
+        expect(result).toBe(false);
+        expect(model.isValid).toBe(false);
     });
 });

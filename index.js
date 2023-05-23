@@ -1,112 +1,143 @@
 const EMPTY_VALUE = [null, undefined, ''];
 export const EMPTY_MANDATORY_FIELD_ERROR = 'empty_mandatory_field';
 export const STOP_OPTION = Object.freeze({
-    RULES : 'rules',
+    FIELDS : 'fields',
     TESTS : 'tests'
 })
 import get from 'lodash.get';
+import set from 'lodash.set';
 
 const fieldIsEmpty = data => 
     typeof data !== 'number' && (data === false || !data?.length); //this covers required true, null, undefined, '' and empty array
 
-function validateRules(rules) {
-    for(const rule of rules)     {
-        if(rule.stopOnFailure && !['tests', 'rules'].includes(rule.stopOnFailure)) {
-            throw new Error(`rule.stopOnFailure's value, if specified must be either 'tests' or 'rules'. Please use the exported STOP_OPTION.TESTS or STOP_OPTION.RULES for consistency`)
+function validateFields(fields) {
+    for(const field of fields)     {
+        if(field.stopOnFailure && !['tests', 'fields'].includes(field.stopOnFailure)) {
+            throw new Error(`field.stopOnFailure's value, if specified must be either 'tests' or 'fields'. Please use the exported STOP_OPTION.TESTS or STOP_OPTION.FIELDS for consistency`)
         }
-        if(rule.stopOnSuccess && !['tests', 'rules'].includes(rule.stopOnSuccess)) {
-            throw new Error(`rule.stopOnSuccess's value, if specified must be either 'tests' or 'rules'. Please use the exported STOP_OPTION.TESTS or STOP_OPTION.RULES for consistency`)
+        if(field.stopOnSuccess && !['tests', 'fields'].includes(field.stopOnSuccess)) {
+            throw new Error(`field.stopOnSuccess's value, if specified must be either 'tests' or 'fields'. Please use the exported STOP_OPTION.TESTS or STOP_OPTION.FIELDS for consistency`)
         }
-        if(!rule.field) {
-            throw new Error('rule.field must be specified');
+        if(!field.name) {
+            throw new Error('field.name must be specified');
         }
     }
-    return rules;
+    return fields;
+}
+
+async function evaluateFields({fields, context, out, data, base = ''}) {
+    let valid = true;
+    
+    const invalidate = (name, message) => {
+        valid = false;
+        set(out, name, message);
+    }
+
+    const setValid = (name) => {
+        set(out,name,true);
+    }
+
+    const mandatoryFieldFault = (name, message) => {
+        if (get(data, name) !== true && !get(data,name)?.length) {
+            invalidate(name, message || this.mandatoryFieldError);
+        }
+    }
+
+
+    for(let field of fields) {
+        const fieldData = get(data, field.name);
+        const isEmpty = await (field.emptyTest || fieldIsEmpty)(fieldData)
+        const aContext = Object.freeze(Object.assign({
+            name : field.name, 
+            data
+        }, context));
+
+        if(field.skipIf && field.skipIf(aContext)) {
+            continue;
+        }
+        if(field.isOptional && isEmpty) {
+            continue; //empty/false but not mandatory. no issue
+        }
+        const path = base.split('.').concat(field.name.split('.'), '').filter(seg => !!seg).join('.');
+
+        if(!field.isOptional && isEmpty) {
+            mandatoryFieldFault(path, field.emptyFieldMessage); //a non empty value or a true is required
+            continue;
+        }
+        //first set the name valid. This will be overridden on test failure
+        setValid(path);
+        
+        //check for subfields
+        if(Array.isArray( get(data, field.name)) && field.fields) {
+           let idx = 0;
+            for(const subData of get(data, field.name)) {
+                valid =  await evaluateFields.call(this, { 
+                    fields : field.fields,
+                    data : subData,
+                    out,
+                    context,
+                    base : `${path}.${idx}`
+                }) && valid;
+                idx++;
+            }
+            
+        }
+
+        if(!field.tests) {
+            continue;
+        }
+
+        let stopFields = false;
+        
+        for(let test of field.tests) {
+            if(!(await test.fn(fieldData, aContext))) {
+                invalidate(path, test.message);
+                if(field.stopOnFailure) {
+                    if(field.stopOnFailure === 'fields') {
+                        stopFields = true;
+                    }
+                    break;
+                }
+                continue;
+            } 
+            if(field.stopOnSuccess) {
+                if(field.stopOnSuccess === 'fields') {
+                    stopFields = true;
+                }
+                break;
+            }
+        }
+        if(stopFields) {
+            break;
+        }
+    }
+    return valid;
 }
 
 export default class Validation {
     #model = null
-    #rules = null
-    #mandatoryFieldError = EMPTY_MANDATORY_FIELD_ERROR;
+    #fields = null
+    mandatoryFieldError = EMPTY_MANDATORY_FIELD_ERROR;
 
-    constructor(model, rules) {
+    constructor(model, fields) {
         this.#model = model;
-        this.#rules = validateRules(rules);
+        this.#fields = validateFields(fields);
     }
 
     withMandatoryFieldError(text) {
-        this.#mandatoryFieldError = text;
+        this.mandatoryFieldError = text;
         return this;
     }
 
-    async validate(data, context = null) {
-        let valid = true;
-        const out = Object.assign({}, this.#model);
-
-        const invalidate = (field, message) => {
-            valid = false;
-            out[field] = message;
-        }
-
-        const setValid = (field) => {
-            out[field] = true;
-        }
-
-        const mandatoryFieldFault = (name, message) => {
-            if (get(data, name) !== true && !get(data,name)?.length) {
-                invalidate(name, message || this.#mandatoryFieldError);
-            }
-        }
-
-        for(let rule of this.#rules) {
-            const fieldData = get(data, rule.field);
-            const isEmpty = await (rule.emptyTest || fieldIsEmpty)(fieldData)
-            const aContext = Object.freeze(Object.assign({
-                field : rule.field, 
-                data
-            }, context));
-
-            if(rule.skipIf && rule.skipIf(aContext)) {
-                continue;
-            }
-            if(rule.isOptional && isEmpty) {
-                continue; //empty/false but not mandatory. no issue
-            }
-            if(!rule.isOptional && isEmpty) {
-                mandatoryFieldFault(rule.field, rule.emptyFieldMessage); //a non empty value or a true is required
-                continue;
-            }
-            //first set the field valid. This will be overridden on test failure
-            setValid(rule.field);
-
-            if(!rule.tests) {
-                continue;
-            }
-            let stopRules = false;
-
-            for(let test of rule.tests) {
-                
-                if(!(await test.fn(get(data,rule.field), aContext))) {
-                    invalidate(rule.field, test.message);
-                    if(rule.stopOnFailure) {
-                        if(rule.stopOnFailure === 'rules') {
-                            stopRules = true;
-                        }
-                        break;
-                    }
-                    continue;
-                } 
-                if(rule.stopOnSuccess) {
-                    if(rule.stopOnSuccess === 'rules') {
-                        stopRules = true;
-                    }
-                    break;
-                }
-            }
-            if(stopRules) {
-                break;
-            }
-        }
+    async validate(data, context = {}) {
+        const out = Object.assign({}, this.#model.fields);
+        const valid = await evaluateFields.call(this, {
+            data,
+            fields : this.#fields, 
+            out, 
+            context
+        });
+        
         Object.assign(this.#model.fields, out);
         return (this.#model.isValid = valid);
     }

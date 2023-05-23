@@ -1,6 +1,6 @@
 # Tiny Form Validation
 
-A small utility class to handle validation of an object's properties using rules.
+A small utility class to handle validation of an object's properties using field rules.
 
 ## Installation
 
@@ -30,7 +30,7 @@ const model = {
     isValid : false
 };
 
-const rules = [
+const fields = [
     {
         field : 'first_name'
     }, {
@@ -76,7 +76,7 @@ const context = {
         return 'FR';
     }
 }
-const validation = new Validation(model, rules);
+const validation = new Validation(model, fields);
 
 const formData = {
     first_name : 'Joe',
@@ -113,7 +113,7 @@ The context object will be merged with `{field : String, data : Object}` before 
 
 ### Constructor
 ```js
-const validator = new Validation(model, rules);
+const validator = new Validation(model, fields);
 ```
 
 ### `validate(data, context)`
@@ -127,9 +127,9 @@ Each test object must provide an `async fn` function that receives the current f
 ### `rule.tests[].stopOnSuccess, rule.tests[].stopOnFailure`
 Determines whether the workflow should stop after a test failure/success. The value, if specified, must be either:
 - `'tests'`: will skip the following tests, if any
-- `'rules'`: will stop evaluating the current rule
+- `'fields'`: will stop evaluating the current rule
 
-The library exports a `STOP_OPTION` object enumerating `TESTS` and `RULES` constants for this purpose.
+The library exports a `STOP_OPTION` object enumerating `TESTS` and `FIELDS` constants for this purpose.
 
 
 
